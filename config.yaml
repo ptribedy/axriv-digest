@@ -2,15 +2,116 @@ subjects:
   - hep-ex
   - nucl-ex
   - hep-ph
+  - nucl-th   # needed for IP-Glasma, CGC, hydro theory papers
 
+# ── Research interests of Prithwish Tribedy (BNL/STAR) ──────────────────────
+# Derived from: Google Scholar profile, INSPIRE record, thesis, and recent papers
 interest: |
-  I am a STAR Experiment physicist at BNL working on STAR-era RHIC analyses.
-  My primary interests are:
-  - Ultra-peripheral collisions (UPC) and coherent/incoherent J/psi photoproduction
-  - Event-shape engineering (ESE) and its effect on flow observables
-  - Flow fluctuations: v_n coefficients, eccentricity, cumulants, non-linear mode coupling
-  - Photonuclear interactions, Pomeron exchange, nuclear shadowing
-  I want to know about genuinely new results, unusually influential papers, or anything
-  that directly overlaps STAR UPC / J/psi photoproduction / ESE / flow-fluctuation analyses.
+  I am Prithwish Tribedy, an Associate Physicist at Brookhaven National Laboratory
+  and active member of the STAR experiment at RHIC. My research spans:
+
+  PRIMARY TOPICS (highest priority):
+  - Ultra-peripheral collisions (UPC): coherent and incoherent J/psi and Upsilon
+    photoproduction; Breit-Wheeler pair production; linearly polarized photon
+    azimuthal distributions; electromagnetic fields in heavy-ion collisions
+  - Baryon transport and stopping: gluon junctions (Y-topology), net-baryon
+    rapidity distributions, baryon number stopping vs. quark transport;
+    photonuclear baryon junction searches; isobar comparisons
+  - Chiral Magnetic Effect (CME) and isobar blind analysis: charge separation,
+    three-particle correlators, reaction-plane correlators, background separation
+  - Event-shape engineering (ESE): ESE-tagged flow, q-vector selection,
+    non-linear mode coupling between v_n harmonics
+  - Flow fluctuations: v2, v3, v4; eccentricity fluctuations; cumulants; 
+    longitudinal flow-plane decorrelation; multiplane cumulants; linear response
+    coefficients; non-linear hydro response
+
+  SECONDARY TOPICS (medium priority):
+  - IP-Glasma / Color Glass Condensate (CGC) initial-state models: IP-Sat,
+    b-CGC, rcBK, Glasma flux tubes, gluon saturation, JIMWLK evolution
+  - Small-system collectivity: p+p, p+A, d+A ridge; azimuthal anisotropy
+    from initial-state vs. final-state (hydro); proton shape fluctuations
+  - QCD critical point and BES-II: net-proton / net-charge / net-kaon 
+    fluctuations and higher-order cumulants; beam energy scan
+  - Heavy flavor at RHIC/EIC: J/psi, Upsilon suppression and production;
+    open charm; unified framework for heavy flavor in high-multiplicity events
+  - Directed flow (v1): electromagnetic-field effects on constituent quarks;
+    charge/strangeness-dependent v1 splitting; baryon/charge stopping connection
+  - Nuclear deformation and imaging: U+U, isobar (Ru+Ru, Zr+Zr) geometry;
+    nuclear skin; imaging nuclear shapes via flow observables
+  - EIC physics: saturation at EIC; baryon junction signatures in e+A; 
+    forward physics and detector requirements
+  - Hyperon global polarization and spin alignment (STAR context)
+  - Femtoscopy / HBT and light-nuclei correlations
+
+  I want papers that are:
+  (a) Genuinely new results — not proceedings summaries of known results
+  (b) Directly testable with or compared to STAR/RHIC/sPHENIX data
+  (c) From close collaborators (see collaborators section below)
+  (d) Unusually influential (high early citation rate)
 
 threshold: 5
+
+# ── Close collaborators — papers by ANY of these authors are elevated ────────
+# Even if not on the primary topics, flag papers from this network.
+collaborators:
+  # IP-Glasma / CGC / initial state
+  - name: "Bjorn Schenke"
+    inspire_id: "B.Schenke.1"
+    topics: "IP-Glasma, CGC, flow, initial state, small systems, baryon-rich matter"
+  - name: "Raju Venugopalan"
+    inspire_id: "R.Venugopalan.1"
+    topics: "CGC, saturation, Glasma, multiplicity distributions, EIC"
+  - name: "Soeren Schlichting"
+    inspire_id: "S.Schlichting.2"
+    topics: "CGC+PYTHIA, small systems, isotropization, thermalization"
+
+  # STAR BNL core group
+  - name: "Zhangbu Xu"
+    inspire_id: "Z.Xu.14"
+    topics: "STAR, baryon junction, UPC, heavy flavor, BES"
+  - name: "Rongrong Ma"
+    inspire_id: "R.Ma.4"
+    topics: "STAR, baryon stopping, net-hyperon, UPC"
+  - name: "Chun Yuen Tsang"
+    inspire_id: "C.Tsang.3"
+    topics: "STAR, baryon transport, net-hyperon, BES-II"
+  - name: "Niseem Magdy"
+    inspire_id: "N.Magdy.1"
+    topics: "STAR, flow, CME, baryon junction, EIC"
+  - name: "James Daniel Brandenburg"
+    inspire_id: "J.Brandenburg.2"
+    topics: "STAR, UPC, Breit-Wheeler, electromagnetic fields, forward tracker"
+  - name: "Wangmei Zha"
+    inspire_id: "W.Zha.1"
+    topics: "UPC, Breit-Wheeler, electromagnetic fields, photoproduction"
+  - name: "Zebo Tang"
+    inspire_id: "Z.Tang.2"
+    topics: "STAR, baryon stopping, UPC, photonuclear"
+  - name: "Wendi Lv"
+    inspire_id: "W.Lv.2"
+    topics: "Baryon transport, charge stopping, STAR BES"
+
+  # CME / topology
+  - name: "Dmitri Kharzeev"
+    inspire_id: "D.E.Kharzeev.1"
+    topics: "CME, chiral anomaly, topology, entanglement, heavy ion"
+  - name: "Jinfeng Liao"
+    inspire_id: "J.Liao.3"
+    topics: "CME, isobar, charge separation, anomalous transport"
+  - name: "Ashik Ikbal Sheikh"
+    inspire_id: "A.Sheikh.1"
+    topics: "Directed flow, electromagnetic fields, CME"
+
+  # Flow / initial state theory
+  - name: "Adam Bzdak"
+    inspire_id: "A.Bzdak.1"
+    topics: "Initial state geometry, p+A collectivity, flow"
+  - name: "Charles Gale"
+    inspire_id: "C.Gale.1"
+    topics: "Viscous hydro, flow, QGP transport"
+  - name: "Sangyong Jeon"
+    inspire_id: "S.Jeon.1"
+    topics: "Hydro, fluctuations, flow harmonics, QGP"
+  - name: "Roy Lacey"
+    inspire_id: "R.Lacey.1"
+    topics: "PHENIX/STAR flow, EIC, baryon junction"
