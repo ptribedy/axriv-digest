@@ -1,8 +1,8 @@
-name: Daily ArXiv Digest — STAR UPC/ESE/Flow
+name: Daily ArXiv Digest — Tribedy/STAR
 
 on:
   schedule:
-    # Run Mon–Fri at 18:30 UTC = 14:30 ET (after arXiv posts daily listings)
+    # Mon–Fri at 18:30 UTC = 14:30 ET (right after arXiv posts daily listings)
     - cron: '30 18 * * 1-5'
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 sendgrid lxml
+        run: pip install requests beautifulsoup4 sendgrid lxml pyyaml
 
       - name: Restore seen-papers cache
         uses: actions/cache@v4
@@ -29,11 +29,11 @@ jobs:
       - name: Run digest
         run: python digest.py
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-          TO_EMAIL: ${{ secrets.TO_EMAIL }}
-          SEEN_CACHE_PATH: /tmp/seen_papers.json
+          FROM_EMAIL:       ${{ secrets.FROM_EMAIL }}
+          TO_EMAIL:         ${{ secrets.TO_EMAIL }}
+          SEEN_CACHE_PATH:  /tmp/seen_papers.json
 
       - name: Save seen-papers cache
         uses: actions/cache@v4
