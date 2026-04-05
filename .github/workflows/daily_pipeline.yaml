@@ -1,7 +1,7 @@
 name: Weekly ArXiv Digest
 on:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: '0 4 * * 1-5'
   workflow_dispatch:
 jobs:
   digest:
