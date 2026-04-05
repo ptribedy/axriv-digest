@@ -95,34 +95,33 @@ def call_gemini(prompt: str, system_instr: str):
     endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{active_model}:generateContent?key={api_key}"
 
     payload = {
-        "systemInstruction": {
-            "parts": [{"text": system_instr}]
-        },
-        "contents": [
-            {"parts": [{"text": prompt}]}
-        ],
-        "generationConfig": {
-            "temperature": 0,
-            "responseMimeType": "application/json"
-        }
+        "systemInstruction": {"parts": [{"text": system_instr}]},
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}
     }
 
-    try:
-        r = requests.post(endpoint, json=payload, timeout=45)
-        r.raise_for_status()
-        data = r.json()
+    for attempt in range(5):
+        try:
+            r = requests.post(endpoint, json=payload, timeout=45)
+            if r.status_code == 429:
+                wait = 60 * (attempt + 1)
+                print(f"Rate limited. Waiting {wait}s before retry {attempt+1}/5...")
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            data = r.json()
+            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            if not parts or "text" not in parts[0]:
+                raise RuntimeError("No text in response")
+            return parts[0]["text"]
+        except Exception as e:
+            if "429" not in str(e) or attempt == 4:
+                raise RuntimeError(f"API request failed: {str(e)[:200]}")
+            wait = 60 * (attempt + 1)
+            print(f"Rate limited. Waiting {wait}s before retry {attempt+1}/5...")
+            time.sleep(wait)
 
-        candidates = data.get("candidates", [])
-        if not candidates:
-            raise RuntimeError("No candidates in response")
-
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts or "text" not in parts[0]:
-            raise RuntimeError("No text in response")
-
-        return parts[0]["text"]
-    except Exception as e:
-        raise RuntimeError(f"API request failed: {str(e)[:200]}")
+    raise RuntimeError("Exhausted all retries")
 
 def score_paper(title: str, abstract: str, url: str):
     system_instr = (
