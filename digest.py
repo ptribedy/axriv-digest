@@ -12,8 +12,8 @@ from sendgrid.helpers.mail import Mail
 # Configuration
 # =========================
 CATEGORIES = ["nucl-ex", "nucl-th"]
-HEURISTIC_THRESHOLD = 4   # papers scoring >= this get Gemini deep dive
-EMAIL_THRESHOLD = 4        # papers scoring >= this appear in email
+HEURISTIC_THRESHOLD = 4
+EMAIL_THRESHOLD = 4
 USER_AGENT = "ArXivBot/1.0"
 ARXIV_HEADERS = {"User-Agent": USER_AGENT}
 
@@ -26,35 +26,25 @@ def clean_text(text: str) -> str:
 def heuristic_score(title: str, abstract: str):
     text = clean_text(f"{title} {abstract}").lower()
     weights = {
-        # STAR/RHIC/EIC direct
         "star detector": 5, "star experiment": 5, "rhic": 4, "sphenix": 4,
         "eic": 4, "electron-ion collider": 4,
-        # High interest topics
         "chiral magnetic effect": 5, "cme": 4,
         "photonuclear": 5, "photoproduction": 4, "upc": 4,
         "ultra-peripheral": 4, "j/psi": 3, "pomeron": 3,
         "hyperon polarization": 5, "lambda polarization": 5,
         "global polarization": 4,
-        # BES / critical point
         "bes-ii": 4, "beam energy scan": 4, "fxt": 3,
         "critical point": 3, "qcd critical": 3,
         "baryon stopping": 3, "net-proton": 3,
-        # Flow
         "anisotropic flow": 3, "elliptic flow": 3, "v2": 2,
-        "triangular flow": 2, "higher order flow": 2,
-        # Femtoscopy / correlations
+        "triangular flow": 2,
         "femtoscopy": 3, "hbt": 3, "source size": 2,
-        "correlation function": 2,
-        # Heavy flavor / quarkonia
         "heavy flavor": 3, "charm quark": 2, "bottom quark": 2,
         "upsilon": 3, "charmonium": 3, "quarkonia": 3,
-        # Jets
         "jet quenching": 3, "jets": 2, "di-jet": 3,
         "parton energy loss": 3,
-        # General heavy-ion
         "heavy ion": 2, "heavy-ion": 2, "quark-gluon plasma": 3,
         "qgp": 3, "glasma": 2, "cgc": 2,
-        # Misc
         "nuclear deformation": 2, "polarization": 1,
         "hyperon": 2, "lambda": 1, "xi": 1, "omega": 1,
         "vorticity": 2, "spin alignment": 3,
@@ -68,11 +58,7 @@ def heuristic_score(title: str, abstract: str):
             hits.append(kw)
 
     score = max(1, min(10, 1 + raw))
-
-    if hits:
-        summary = f"Keyword matches: {', '.join(hits[:6])}."
-    else:
-        summary = clean_text(abstract)[:200]
+    summary = f"Keyword matches: {', '.join(hits[:6])}." if hits else clean_text(abstract)[:200]
 
     if any(x in text for x in ["star detector", "star experiment", "rhic", "sphenix"]):
         star = "Direct RHIC/STAR/sPHENIX relevance."
@@ -94,16 +80,15 @@ def heuristic_score(title: str, abstract: str):
     return score, summary, star
 
 # =========================
-# Gemini Deep Dive
+# Gemini
 # =========================
 def call_gemini(prompt: str, system_instr: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("Missing GEMINI_API_KEY")
-
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash-lite:generateContent?key={api_key}"
+        "gemini-2.0-flash-lite:generateContent?key=" + api_key
     )
     payload = {
         "systemInstruction": {"parts": [{"text": system_instr}]},
@@ -116,7 +101,7 @@ def call_gemini(prompt: str, system_instr: str) -> str:
     r.raise_for_status()
     parts = r.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
     if not parts or "text" not in parts[0]:
-        raise RuntimeError("No text in Gemini response")
+        raise RuntimeError("No text in response")
     return parts[0]["text"]
 
 def parse_deep_json(raw: str):
@@ -154,9 +139,8 @@ def get_html_text(arxiv_url: str) -> str:
     except:
         return ""
 
-def gemini_deep_dive(title: str, abstract: str, url: str, heuristic_score_val: int):
+def gemini_deep_dive(title: str, abstract: str, url: str):
     full_text = get_html_text(url)
-
     system_instr = (
         "You are a STAR Experiment physicist at BNL. "
         "Evaluate arXiv papers for relevance to STAR/RHIC/EIC heavy-ion physics. "
@@ -164,11 +148,10 @@ def gemini_deep_dive(title: str, abstract: str, url: str, heuristic_score_val: i
         "photonuclear/UPC/J/psi photoproduction, femtoscopy, flow, jet quenching, "
         "heavy flavor, quarkonia, spin alignment, vorticity, critical point search."
     )
-
     prompt = f"""
 Read this paper carefully and return ONLY valid JSON with exactly these keys:
 {{
-  "score": <1-10 integer, relevance to STAR/RHIC/EIC physics>,
+  "score": <1-10 integer>,
   "summary": "<2-3 sentence summary of what the paper does and its main findings>",
   "star_angle": "<specific STAR/sPHENIX/EIC observable or measurement this connects to, or N/A>",
   "key_results": "<the 2-3 most important quantitative or qualitative results>",
@@ -183,10 +166,7 @@ Full paper text:
 """.strip()
 
     raw = call_gemini(prompt, system_instr)
-    result = parse_deep_json(raw)
-    if result is None:
-        return None
-    return result
+    return parse_deep_json(raw)
 
 # =========================
 # Paper Fetching
@@ -217,22 +197,20 @@ def fetch_papers_for_category(session: requests.Session, cat: str):
 # Email Builder
 # =========================
 def build_email_html(hits, total_papers):
-    from datetime import date
     body = [
-        f"<h2>ArXiv Digest — STAR Physics</h2>",
+        "<h2>ArXiv Digest — STAR Physics</h2>",
         f"<p><b>{len(hits)} relevant papers</b> out of {total_papers} scanned "
         f"across {html.escape(', '.join(CATEGORIES))}.</p><hr>",
     ]
-
     if not hits:
         body.append(f"<p>No papers scored at or above {EMAIL_THRESHOLD} today.</p>")
         return "".join(body)
 
     for h in hits:
-        gemini_tag = "🤖 Gemini" if h.get("gemini_scored") else "📊 Heuristic"
+        tag = "Gemini" if h.get("gemini_scored") else "Heuristic"
         body.append(
             f"<p>"
-            f"<b>[{h['score']}/10] {gemini_tag}</b> "
+            f"<b>[{h['score']}/10] [{tag}]</b> "
             f"<a href=\"{html.escape(h['id'])}\">{html.escape(h['title'])}</a><br>"
             f"<i>{html.escape(h['authors'])} | {html.escape(h['cat'])}</i><br><br>"
             f"<b>Summary:</b> {html.escape(h['summary'])}<br>"
@@ -276,22 +254,22 @@ def main():
     gemini_fail = 0
 
     for i, p in enumerate(unique_papers, start=1):
-        # Step 1: heuristic score always
         h_score, h_summary, h_star = heuristic_score(p["title"], p["abstract"])
         print(f"{i:03d}/{len(unique_papers)} | heuristic={h_score}/10 | {p['title'][:80]}")
 
         if h_score < HEURISTIC_THRESHOLD:
-            continue  # skip low-scoring papers entirely
+            continue
 
-        # Step 2: Gemini deep dive on anything that passes heuristic
+        # Gemini deep dive on papers that pass heuristic
         gemini_result = None
         try:
-            gemini_result = gemini_deep_dive(p["title"], p["abstract"], p["id"], h_score)
-            gemini_success += 1
-            print(f"    └─ Gemini score={gemini_result[0]}/10")
+            gemini_result = gemini_deep_dive(p["title"], p["abstract"], p["id"])
+            if gemini_result:
+                gemini_success += 1
+                print(f"    Gemini={gemini_result[0]}/10")
         except Exception as e:
             gemini_fail += 1
-            print(f"    └─ Gemini failed: {e} — using heuristic")
+            print(f"    Gemini failed: {e}")
 
         if gemini_result:
             score, summary, star, key_results, what_you_learn, followup_ideas = gemini_result
@@ -303,4 +281,24 @@ def main():
 
         if score >= EMAIL_THRESHOLD:
             hits.append({
-                **p
+                **p,
+                "score": score,
+                "summary": summary,
+                "star": star,
+                "key_results": key_results,
+                "what_you_learn": what_you_learn,
+                "followup_ideas": followup_ideas,
+                "gemini_scored": gemini_scored,
+            })
+
+        time.sleep(1)  # light throttle between Gemini calls
+
+    hits.sort(key=lambda x: (-x["score"], x["title"].lower()))
+    print(f"Found {len(hits)} relevant papers | Gemini OK={gemini_success} fail={gemini_fail}")
+
+    html_body = build_email_html(hits, len(unique_papers))
+
+    sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
+    mail = Mail(
+        from_email=os.environ["FROM_EMAIL"],
+        to_emails=os
