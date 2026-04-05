@@ -261,7 +261,7 @@ def main():
                 "summary": summary,
                 "star": star,
             })
-        time.sleep(0.5)
+        time.sleep(4)
 
     hits.sort(key=lambda x: (-x["score"], x["title"].lower()))
     print(f"Found {len(hits)} relevant papers")
