@@ -8,22 +8,18 @@ from bs4 import BeautifulSoup
 import sendgrid
 from sendgrid.helpers.mail import Mail
 
-# =========================
-# Configuration
-# =========================
 CATEGORIES = ["nucl-ex", "nucl-th"]
 HEURISTIC_THRESHOLD = 4
 EMAIL_THRESHOLD = 4
 USER_AGENT = "ArXivBot/1.0"
 ARXIV_HEADERS = {"User-Agent": USER_AGENT}
 
-def clean_text(text: str) -> str:
+
+def clean_text(text):
     return re.sub(r"\s+", " ", text or "").strip()
 
-# =========================
-# Heuristic Scorer
-# =========================
-def heuristic_score(title: str, abstract: str):
+
+def heuristic_score(title, abstract):
     text = clean_text(f"{title} {abstract}").lower()
     weights = {
         "star detector": 5, "star experiment": 5, "rhic": 4, "sphenix": 4,
@@ -50,16 +46,13 @@ def heuristic_score(title: str, abstract: str):
         "vorticity": 2, "spin alignment": 3,
         "machine learning": 1,
     }
-
     raw, hits = 0, []
     for kw, w in weights.items():
         if kw in text:
             raw += w
             hits.append(kw)
-
     score = max(1, min(10, 1 + raw))
     summary = f"Keyword matches: {', '.join(hits[:6])}." if hits else clean_text(abstract)[:200]
-
     if any(x in text for x in ["star detector", "star experiment", "rhic", "sphenix"]):
         star = "Direct RHIC/STAR/sPHENIX relevance."
     elif any(x in text for x in ["hyperon polarization", "lambda polarization", "global polarization"]):
@@ -76,13 +69,10 @@ def heuristic_score(title: str, abstract: str):
         star = "Relevant to STAR femtoscopy program."
     else:
         star = "N/A"
-
     return score, summary, star
 
-# =========================
-# Gemini
-# =========================
-def call_gemini(prompt: str, system_instr: str) -> str:
+
+def call_gemini(prompt, system_instr):
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("Missing GEMINI_API_KEY")
@@ -104,7 +94,8 @@ def call_gemini(prompt: str, system_instr: str) -> str:
         raise RuntimeError("No text in response")
     return parts[0]["text"]
 
-def parse_deep_json(raw: str):
+
+def parse_deep_json(raw):
     start, end = raw.find('{'), raw.rfind('}')
     if start != -1 and end != -1:
         raw = raw[start:end+1]
@@ -122,14 +113,16 @@ def parse_deep_json(raw: str):
     except:
         return None
 
-def extract_main_text_from_html(html_text: str) -> str:
+
+def extract_main_text_from_html(html_text):
     soup = BeautifulSoup(html_text, "html.parser")
     for tag in soup(["script", "style", "nav", "header", "footer"]):
         tag.decompose()
     main = soup.find("article") or soup.find("main") or soup.body or soup
     return clean_text(main.get_text(separator=" ", strip=True))[:20000]
 
-def get_html_text(arxiv_url: str) -> str:
+
+def get_html_text(arxiv_url):
     html_url = arxiv_url.replace("/abs/", "/html/")
     try:
         r = requests.get(html_url, headers=ARXIV_HEADERS, timeout=20)
@@ -139,7 +132,8 @@ def get_html_text(arxiv_url: str) -> str:
     except:
         return ""
 
-def gemini_deep_dive(title: str, abstract: str, url: str):
+
+def gemini_deep_dive(title, abstract, url):
     full_text = get_html_text(url)
     system_instr = (
         "You are a STAR Experiment physicist at BNL. "
@@ -148,30 +142,25 @@ def gemini_deep_dive(title: str, abstract: str, url: str):
         "photonuclear/UPC/J/psi photoproduction, femtoscopy, flow, jet quenching, "
         "heavy flavor, quarkonia, spin alignment, vorticity, critical point search."
     )
-    prompt = f"""
-Read this paper carefully and return ONLY valid JSON with exactly these keys:
-{{
-  "score": <1-10 integer>,
-  "summary": "<2-3 sentence summary of what the paper does and its main findings>",
-  "star_angle": "<specific STAR/sPHENIX/EIC observable or measurement this connects to, or N/A>",
-  "key_results": "<the 2-3 most important quantitative or qualitative results>",
-  "what_you_learn": "<what a STAR physicist would take away from reading this>",
-  "followup_ideas": "<2-3 concrete research directions or measurements this paper motivates>"
-}}
-
-Title: {title}
-Abstract: {abstract}
-Full paper text:
-{full_text if full_text else "(HTML not available — use abstract only)"}
-""".strip()
-
+    prompt = (
+        "Read this paper carefully and return ONLY valid JSON with exactly these keys:\n"
+        "{\n"
+        '  "score": <1-10 integer>,\n'
+        '  "summary": "<2-3 sentence summary of what the paper does and its main findings>",\n'
+        '  "star_angle": "<specific STAR/sPHENIX/EIC observable or measurement this connects to, or N/A>",\n'
+        '  "key_results": "<the 2-3 most important quantitative or qualitative results>",\n'
+        '  "what_you_learn": "<what a STAR physicist would take away from reading this>",\n'
+        '  "followup_ideas": "<2-3 concrete research directions or measurements this paper motivates>"\n'
+        "}\n\n"
+        f"Title: {title}\n"
+        f"Abstract: {abstract}\n"
+        f"Full paper text:\n{full_text if full_text else '(HTML not available — use abstract only)'}"
+    )
     raw = call_gemini(prompt, system_instr)
     return parse_deep_json(raw)
 
-# =========================
-# Paper Fetching
-# =========================
-def fetch_papers_for_category(session: requests.Session, cat: str):
+
+def fetch_papers_for_category(session, cat):
     url = f"https://arxiv.org/list/{cat}/recent"
     r = session.get(url, headers=ARXIV_HEADERS, timeout=30)
     r.raise_for_status()
@@ -193,9 +182,7 @@ def fetch_papers_for_category(session: requests.Session, cat: str):
         })
     return papers
 
-# =========================
-# Email Builder
-# =========================
+
 def build_email_html(hits, total_papers):
     body = [
         "<h2>ArXiv Digest — STAR Physics</h2>",
@@ -205,12 +192,10 @@ def build_email_html(hits, total_papers):
     if not hits:
         body.append(f"<p>No papers scored at or above {EMAIL_THRESHOLD} today.</p>")
         return "".join(body)
-
     for h in hits:
         tag = "Gemini" if h.get("gemini_scored") else "Heuristic"
         body.append(
-            f"<p>"
-            f"<b>[{h['score']}/10] [{tag}]</b> "
+            f"<p><b>[{h['score']}/10] [{tag}]</b> "
             f"<a href=\"{html.escape(h['id'])}\">{html.escape(h['title'])}</a><br>"
             f"<i>{html.escape(h['authors'])} | {html.escape(h['cat'])}</i><br><br>"
             f"<b>Summary:</b> {html.escape(h['summary'])}<br>"
@@ -223,12 +208,9 @@ def build_email_html(hits, total_papers):
         if h.get("followup_ideas"):
             body.append(f"<b>Follow-up ideas:</b> {html.escape(h['followup_ideas'])}<br>")
         body.append("</p><hr>")
-
     return "".join(body)
 
-# =========================
-# Main
-# =========================
+
 def main():
     required_env = ["GEMINI_API_KEY", "SENDGRID_API_KEY", "FROM_EMAIL", "TO_EMAIL"]
     missing = [k for k in required_env if not os.environ.get(k)]
@@ -260,7 +242,6 @@ def main():
         if h_score < HEURISTIC_THRESHOLD:
             continue
 
-        # Gemini deep dive on papers that pass heuristic
         gemini_result = None
         try:
             gemini_result = gemini_deep_dive(p["title"], p["abstract"], p["id"])
@@ -291,14 +272,14 @@ def main():
                 "gemini_scored": gemini_scored,
             })
 
-        time.sleep(1)  # light throttle between Gemini calls
+        time.sleep(1)
 
     hits.sort(key=lambda x: (-x["score"], x["title"].lower()))
     print(f"Found {len(hits)} relevant papers | Gemini OK={gemini_success} fail={gemini_fail}")
 
     html_body = build_email_html(hits, len(unique_papers))
 
-     sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
+    sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
     mail = Mail(
         from_email=os.environ["FROM_EMAIL"],
         to_emails=os.environ["TO_EMAIL"],
@@ -308,5 +289,5 @@ def main():
     sg.send(mail)
     print("Email sent.")
 
+
 if __name__ == "__main__":
-    main()
