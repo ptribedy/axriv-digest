@@ -1,12 +1,16 @@
 subjects:
-  - cs.LG
-  - cs.AI
-  - cs.CL
-  - stat.ML
+  - hep-ex
+  - nucl-ex
+  - hep-ph
 
 interest: |
-  I am interested in large language models, retrieval-augmented generation,
-  efficient fine-tuning methods like LoRA and adapters, and AI reasoning.
-  I care about practical systems work and novel benchmark results.
+  I am a STAR Experiment physicist at BNL working on STAR-era RHIC analyses.
+  My primary interests are:
+  - Ultra-peripheral collisions (UPC) and coherent/incoherent J/psi photoproduction
+  - Event-shape engineering (ESE) and its effect on flow observables
+  - Flow fluctuations: v_n coefficients, eccentricity, cumulants, non-linear mode coupling
+  - Photonuclear interactions, Pomeron exchange, nuclear shadowing
+  I want to know about genuinely new results, unusually influential papers, or anything
+  that directly overlaps STAR UPC / J/psi photoproduction / ESE / flow-fluctuation analyses.
 
-threshold: 8
+threshold: 5
