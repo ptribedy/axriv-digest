@@ -298,7 +298,15 @@ def main():
 
     html_body = build_email_html(hits, len(unique_papers))
 
-    sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
+     sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
     mail = Mail(
         from_email=os.environ["FROM_EMAIL"],
-        to_emails=os
+        to_emails=os.environ["TO_EMAIL"],
+        subject=f"ArXiv Digest: {len(hits)} STAR-relevant papers",
+        html_content=html_body,
+    )
+    sg.send(mail)
+    print("Email sent.")
+
+if __name__ == "__main__":
+    main()
