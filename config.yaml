@@ -1,1 +1,12 @@
+subjects:
+  - cs.LG
+  - cs.AI
+  - cs.CL
+  - stat.ML
 
+interest: |
+  I am interested in large language models, retrieval-augmented generation,
+  efficient fine-tuning methods like LoRA and adapters, and AI reasoning.
+  I care about practical systems work and novel benchmark results.
+
+threshold: 8
