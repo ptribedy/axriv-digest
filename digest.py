@@ -32,17 +32,13 @@ def heuristic_score(title: str, abstract: str):
         "upc": 2, "pomeron": 2, "femtoscopy": 2, "hbt": 2, "gdr": 2,
         "nuclear deformation": 2, "machine learning": 1, "ml": 1,
     }
-
-    raw = 0
-    hits = []
+    raw, hits = 0, []
     for kw, w in weights.items():
         if kw in text:
             raw += w
             hits.append(kw)
-
     score = max(1, min(10, 1 + raw))
     summary = f"Heuristic match via: {', '.join(hits[:4])}." if hits else clean_text(abstract)[:160]
-
     if any(x in text for x in ["star", "rhic", "sphenix"]):
         star = "Direct RHIC/STAR/sPHENIX relevance."
     elif any(x in text for x in ["hyperon", "polarization", "lambda", "xi", "omega"]):
@@ -53,7 +49,6 @@ def heuristic_score(title: str, abstract: str):
         star = "Possible UPC / J/psi photoproduction relevance for STAR/EIC."
     else:
         star = "N/A"
-
     return score, summary, star
 
 def parse_json_text(raw: str):
@@ -61,7 +56,6 @@ def parse_json_text(raw: str):
     end = raw.rfind('}')
     if start != -1 and end != -1:
         raw = raw[start:end+1]
-
     try:
         obj = json.loads(raw)
         score = int(obj.get("score", 1))
@@ -105,7 +99,7 @@ def call_gemini(prompt: str, system_instr: str):
             r = requests.post(endpoint, json=payload, timeout=45)
             if r.status_code == 429:
                 wait = 60 * (attempt + 1)
-                print(f"Rate limited. Waiting {wait}s before retry {attempt+1}/5...")
+                print(f"Rate limited. Waiting {wait}s (retry {attempt+1}/5)...")
                 time.sleep(wait)
                 continue
             r.raise_for_status()
@@ -118,7 +112,7 @@ def call_gemini(prompt: str, system_instr: str):
             if "429" not in str(e) or attempt == 4:
                 raise RuntimeError(f"API request failed: {str(e)[:200]}")
             wait = 60 * (attempt + 1)
-            print(f"Rate limited. Waiting {wait}s before retry {attempt+1}/5...")
+            print(f"Rate limited. Waiting {wait}s (retry {attempt+1}/5)...")
             time.sleep(wait)
 
     raise RuntimeError("Exhausted all retries")
@@ -131,7 +125,6 @@ def score_paper(title: str, abstract: str, url: str):
         "critical-point searches, jets, heavy flavor, UPC, J/psi photoproduction, "
         "femtoscopy, nuclear deformation, and observables testable with STAR or sPHENIX."
     )
-
     base_prompt = f"""
 Return ONLY valid JSON with exactly these keys:
 {{
@@ -158,8 +151,6 @@ Return ONLY valid JSON with exactly these keys:
   "star_angle": "specific STAR/sPHENIX/EIC testable angle or N/A"
 }}
 
-Use the paper text below to refine the previous ranking and especially the STAR angle.
-
 Title: {title}
 Abstract: {abstract}
 Paper HTML text:
@@ -174,19 +165,15 @@ def fetch_papers_for_category(session: requests.Session, cat: str):
     url = f"https://arxiv.org/list/{cat}/recent"
     r = session.get(url, headers=ARXIV_HEADERS, timeout=30)
     r.raise_for_status()
-
     soup = BeautifulSoup(r.text, "html.parser")
     papers = []
-
     for dt, dd in zip(soup.find_all("dt"), soup.find_all("dd")):
         link = dt.find("a", title="Abstract")
         title_tag = dd.find("div", class_="list-title")
         abstract_tag = dd.find("p", class_="mathjax")
         authors_tag = dd.find("div", class_="list-authors")
-
         if not link or not title_tag:
             continue
-
         papers.append({
             "id": "https://arxiv.org" + link["href"],
             "title": clean_text(title_tag.get_text(" ", strip=True).replace("Title:", "")),
@@ -199,23 +186,18 @@ def fetch_papers_for_category(session: requests.Session, cat: str):
 def build_email_html(hits, total_papers):
     body = [f"<h2>ArXiv Digest -- STAR Physics ({len(hits)} papers)</h2>"]
     body.append(f"<p>Scanned {total_papers} papers across {html.escape(', '.join(CATEGORIES))}.</p><hr>")
-
     if not hits:
         body.append(f"<p>No papers scored at or above {THRESHOLD}.</p>")
         return "".join(body)
-
     for h in hits:
         body.append(
-            f"""
-            <p>
-                <b>[{h['score']}/10]</b>
-                <a href="{html.escape(h['id'])}">{html.escape(h['title'])}</a><br>
-                <i>{html.escape(h['authors'])} | {html.escape(h['cat'])}</i><br>
-                {html.escape(h['summary'])}<br>
-                <b>STAR angle:</b> {html.escape(h['star'])}
-            </p>
-            <hr>
-            """
+            f"<p>"
+            f"<b>[{h['score']}/10]</b> "
+            f"<a href=\"{html.escape(h['id'])}\">{html.escape(h['title'])}</a><br>"
+            f"<i>{html.escape(h['authors'])} | {html.escape(h['cat'])}</i><br>"
+            f"{html.escape(h['summary'])}<br>"
+            f"<b>STAR angle:</b> {html.escape(h['star'])}"
+            f"</p><hr>"
         )
     return "".join(body)
 
@@ -238,10 +220,8 @@ def main():
 
     unique_papers = list({p["id"]: p for p in all_papers}.values())
     print(f"Fetched {len(unique_papers)} unique papers total")
-    print(f"Gemini key active: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-    hits = []
-    failures = 0
+    hits, failures = [], 0
 
     for i, p in enumerate(unique_papers, start=1):
         try:
@@ -254,17 +234,12 @@ def main():
         print(f"{i:03d}/{len(unique_papers)} | {score}/10 | {p['title'][:90]}")
 
         if score >= THRESHOLD:
-            hits.append({
-                **p,
-                "score": score,
-                "summary": summary,
-                "star": star,
-            })
-        time.sleep(4)
+            hits.append({**p, "score": score, "summary": summary, "star": star})
+
+        time.sleep(4)  # stay under 15 RPM free tier limit
 
     hits.sort(key=lambda x: (-x["score"], x["title"].lower()))
-    print(f"Found {len(hits)} relevant papers")
-    print(f"Model failures: {failures}")
+    print(f"Found {len(hits)} relevant papers | Gemini failures: {failures}")
 
     html_body = build_email_html(hits, len(unique_papers))
 
